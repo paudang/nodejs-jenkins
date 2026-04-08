@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'nodejs-zxczx',
+      name: 'nodejs-service',
       script: './dist/index.js', // Entry point
       instances: 'max', // Run in Cluster Mode to utilize all CPUs (Note: On Windows, cluster mode may throw `spawn wmic ENOENT` errors due to missing WMIC in Windows 11. To fix, change instances to 1, or install wmic)
       exec_mode: 'cluster',
@@ -13,13 +13,11 @@ module.exports = {
         REDIS_HOST: '127.0.0.1',
         REDIS_PORT: 6379,
         REDIS_PASSWORD: '',
-        KAFKA_BROKER: '127.0.0.1:9093',
-        KAFKAJS_NO_PARTITIONER_WARNING: 1,
         DB_HOST: '127.0.0.1',
-        DB_USER: 'postgres',
+        DB_USER: 'root',
         DB_PASSWORD: 'root',
         DB_NAME: 'demo',
-        DB_PORT: 5432,
+        DB_PORT: 3306,
       },
     },
   ],

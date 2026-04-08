@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import logger from '@/infrastructure/log/logger';
+import logger from '@/utils/logger';
 import { ApiError } from '@/errors/ApiError';
 import { HTTP_STATUS } from '@/utils/httpCodes';
 

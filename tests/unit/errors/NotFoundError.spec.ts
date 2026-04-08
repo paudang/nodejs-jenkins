@@ -19,4 +19,9 @@ describe('NotFoundError', () => {
     const error = new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     expect(error.message).toBe(ERROR_MESSAGES.USER_NOT_FOUND);
   });
+
+  it('should have the correct status code', () => {
+    const error = new NotFoundError();
+    expect(error.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
+  });
 });

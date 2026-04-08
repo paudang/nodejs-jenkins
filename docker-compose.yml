@@ -5,28 +5,24 @@ services:
       - "${PORT:-3000}:3000"
     depends_on:
       - db
-      - kafka
     environment:
-      - KAFKA_BROKER=kafka:9092
-      - KAFKAJS_NO_PARTITIONER_WARNING=1
       - PORT=3000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - DB_HOST=db
-      - DB_USER=postgres
+      - DB_USER=root
       - DB_PASSWORD=root
       - DB_NAME=demo
-      - DB_PORT=5432
+      - DB_PORT=3306
   db:
-    image: postgres:15
+    image: mysql:8.0
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: demo
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - ./flyway/sql:/docker-entrypoint-initdb.d
   flyway:
@@ -35,30 +31,16 @@ services:
     volumes:
       - ./flyway/sql:/flyway/sql
     environment:
-      FLYWAY_URL: jdbc:postgresql://db:5432/demo
-      FLYWAY_USER: postgres
+      FLYWAY_URL: jdbc:mysql://db:3306/demo
+      FLYWAY_USER: root
       FLYWAY_PASSWORD: root
       FLYWAY_BASELINE_ON_MIGRATE: "true"
     depends_on:
       - db
-  kafka:
-    image: bitnamilegacy/kafka:3.4.1-debian-12-r39
-    ports:
-      - "${KAFKA_EXTERNAL_PORT:-9093}:9093"
-    environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9094
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9093}
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:9093,CONTROLLER://:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
   redis:
     image: redis:alpine
     restart: always
     ports:
       - "${REDIS_PORT:-6379}:6379"
 volumes:
-  postgresql_data:
+  mysql_data:
