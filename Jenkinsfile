@@ -5,6 +5,10 @@ pipeline {
         CI = 'true'
     }
 
+    tools {
+        nodejs 'nodejs'
+    }
+
     stages {
         stage('Install Dependencies') {
             steps {
