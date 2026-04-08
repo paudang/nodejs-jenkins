@@ -1,0 +1,134 @@
+import { setupGracefulShutdown } from '@/utils/gracefulShutdown';
+import { Server } from 'http';
+import mongoose from 'mongoose';
+import redisService from '@/config/redisClient';
+
+jest.mock('mongoose', () => {
+    return {
+        __esModule: true,
+        default: {
+            connection: {
+                close: jest.fn().mockResolvedValue(true)
+            }
+        }
+    };
+});
+
+jest.mock('@/config/redisClient', () => {
+    return {
+        __esModule: true,
+        default: {
+            quit: jest.fn().mockResolvedValue(true)
+        }
+    };
+});
+
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
+describe('Graceful Shutdown', () => {
+    let mockServer: Partial<Server>;
+    let mockExit: jest.SpyInstance;
+    let processListeners: Record<string, (...args: any[]) => void>;
+    let mockKafkaService: { disconnect: jest.Mock };
+
+    beforeEach(() => {
+        jest.useFakeTimers({ legacyFakeTimers: true });
+        jest.clearAllMocks();
+        processListeners = {};
+
+        mockServer = {
+            close: jest.fn().mockImplementation((cb?: (err?: Error) => void) => {
+                if (cb) Promise.resolve().then(() => cb());
+                return mockServer;
+            })
+        };
+
+        mockExit = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+        jest.spyOn(process, 'on').mockImplementation(((event: string, handler: (...args: any[]) => void) => {
+            processListeners[event] = handler;
+            return process;
+        }) as any);
+
+        mockKafkaService = { disconnect: jest.fn().mockResolvedValue(true) };
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        jest.useRealTimers();
+    });
+
+    it('should register SIGTERM and SIGINT events', () => {
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        expect(processListeners['SIGTERM']).toBeDefined();
+        expect(processListeners['SIGINT']).toBeDefined();
+    });
+
+    it('should cleanly shutdown all connections and exit 0 on SIGTERM', async () => {
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        
+        processListeners['SIGTERM']();
+        
+        // Flush microtask queue multiple times for nested async operations
+        await flushPromises();
+        await flushPromises();
+        await flushPromises();
+
+        expect(mockServer.close).toHaveBeenCalled();
+
+        expect(mongoose.connection.close).toHaveBeenCalledWith(false);
+
+        expect(redisService.quit).toHaveBeenCalled();
+
+        expect(mockKafkaService.disconnect).toHaveBeenCalled();
+
+        expect(mockExit).toHaveBeenCalledWith(0);
+    });
+
+    it('should exit 0 on SIGINT', async () => {
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        processListeners['SIGINT']();
+        await flushPromises();
+        await flushPromises();
+        expect(mockExit).toHaveBeenCalledWith(0);
+    });
+
+    it('should handle errors during shutdown and exit 1', async () => {
+        mockKafkaService.disconnect.mockRejectedValueOnce(new Error('Shutdown Error'));
+        (mongoose.connection.close as jest.Mock).mockResolvedValueOnce(true);
+
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        processListeners['SIGTERM']();
+        
+        await flushPromises();
+        await flushPromises();
+        await flushPromises();
+
+        expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle server close errors', async () => {
+        const serverError = new Error('Server Close Error');
+        mockServer.close = jest.fn().mockImplementation((cb?: (err?: Error) => void) => {
+            if (cb) Promise.resolve().then(() => cb(serverError));
+            return mockServer;
+        });
+
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        processListeners['SIGTERM']();
+        
+        await flushPromises();
+        // Since it's inside server.close callback, we need to wait
+        await flushPromises();
+
+        expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
+    it('should forcefully shutdown if cleanup takes too long', async () => {
+        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        processListeners['SIGTERM']();
+        
+        jest.advanceTimersByTime(15000);
+        
+        expect(mockExit).toHaveBeenCalledWith(1);
+    });
+});
