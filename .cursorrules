@@ -6,7 +6,7 @@ You are an expert working on **nodejs-zxczx**.
 - **Language**: TypeScript
 - **Architecture**: Clean Architecture
 - **Database**: PostgreSQL
-- **Communication**: GraphQL
+- **Communication**: Kafka
 
 ## Excluded Files/Folders
 When indexing or searching the workspace, ignore the following paths to prevent context pollution:

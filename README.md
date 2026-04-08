@@ -15,7 +15,7 @@ This project follows a strict **7-Step Production-Ready Process** to ensure qual
 1.  **Initialize Git**: `git init` (Required for Husky hooks and security gates).
 2.  **Install Dependencies**: `npm install`.
 3.  **Configure Environment**: Copy `.env.example` to `.env`.
-4.  **Start Infrastructure**: `docker-compose up -d db redis`.
+4.  **Start Infrastructure**: `docker-compose up -d db redis kafka`.
 5.  **Run Development**: `npm run dev`.
 6.  **Verify Standards**: `npm run lint` and `npm test` (Enforce 80% coverage).
 7.  **Build & Deploy**: `npm run build` followed by `npm run deploy` (via PM2).
@@ -63,7 +63,7 @@ git init
 npm install
 
 # Start required services
-docker-compose up -d db redis
+docker-compose up -d db redis kafka
 
 # Run the app in development mode
 npm run dev
@@ -80,51 +80,35 @@ npm test
 npm run test:coverage
 ```
 
-API is exposed via **GraphQL**.
-The Apollo Sandbox UI for API exploration and documentation is available natively, fully embedded for offline development:
-- **URL**: `http://localhost:3000/graphql` (Dynamic based on PORT)
-If you are opening `http://localhost:3000/graphql` in your browser, you can directly run the following in the Apollo Sandbox UI:
+Microservices communication handled via **Kafka**.
 
-**Query to get all users:**
-```graphql
-query GetAllUsers {
-  getAllUsers {
-    id
-    name
-    email
-  }
-}
-```
+## 📡 Testing Kafka Asynchronous Flow
+This project demonstrates a production-ready Kafka flow:
+1. **Producer**: When a user is created via the API, a `USER_CREATED` event is sent to `user-topic`.
+2. **Consumer**: `WelcomeEmailConsumer` listens to `user-topic` and simulates sending an email.
 
-**Mutation to create a user:**
-```graphql
-mutation CreateUser {
-  createUser(name: "John Doe", email: "john@example.com") {
-    id
-    name
-    email
-  }
-}
-```
+### How to verify:
+1. Ensure infrastructure is running: `docker-compose up -d db redis kafka`
+2. Start the app: `npm run dev`
+3. Trigger an event by creating a user (via Postman or curl):
+   ```bash
+   curl -X POST http://localhost:3000/api/users \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Kafka Tester", "email": "kafka@example.com"}'
+   ```
+4. Observe the logs:
+   ```text
+   [Kafka] Producer: Sent USER_CREATED event for 'kafka@example.com'
+   [Kafka] Consumer: Received USER_CREATED. 
+   [Kafka] Consumer: 📧 Sending welcome email to 'kafka@example.com'... Done!
+   ```
 
-**Mutation to update a user:**
-```graphql
-mutation UpdateUser {
-  updateUser(id: "1", name: "John Updated") {
-    id
-    name
-    email
-  }
-}
-```
-
-**Mutation to delete a user:**
-```graphql
-mutation DeleteUser {
-  deleteUser(id: "1")
-}
-```
-
+### 🛠️ Kafka Troubleshooting
+If the connection or events are failing:
+1. **Check Docker**: Ensure Kafka container is running (`docker ps`).
+2. **Verify Broker**: `KAFKA_BROKER` in `.env` must match your host/port (standard: 9093).
+3. **Advertised Listeners**: If using Windows/WSL, check `docker-compose.yml` advertisers are correct.
+4. **Logs**: Check `docker compose logs -f kafka` for start-up errors.
 
 ## ⚡ Caching
 This project uses **Redis** for caching.
@@ -146,7 +130,7 @@ To run the Node.js application locally while using Docker for the infrastructure
 
 ```bash
 # Start infrastructure
-docker-compose up -d db redis
+docker-compose up -d db redis kafka
 
 # Start the application
 npm run dev
@@ -166,6 +150,7 @@ docker build -t nodejs-zxczx .
 docker run -p 3000:3000 --network nodejs-zxczx_default \
   -e DB_HOST=db \
   -e REDIS_HOST=redis \
+  -e KAFKA_BROKER=kafka:29092 \
   nodejs-zxczx
 ```
 ## 🚀 PM2 Deployment (VPS/EC2)
@@ -177,7 +162,7 @@ npm install
 2. **Start Infrastructure (DB, Redis, Kafka, etc.) in the background**
 *(This specifically starts the background services without running the application inside Docker, allowing PM2 to handle it).*
 ```bash
-docker-compose up -d db redis
+docker-compose up -d db redis kafka
 ```
 3. **Wait 5-10s** for the database to fully initialize.
 4. **Deploy the App using PM2 in Cluster Mode**

@@ -1,0 +1,40 @@
+import { BaseConsumer } from '@/interfaces/messaging/baseConsumer';
+import logger from '@/infrastructure/log/logger';
+import { UserEventSchema } from '@/interfaces/messaging/schemas/userEventSchema';
+import { ERROR_MESSAGES } from '@/utils/errorMessages';
+import { KAFKA_ACTIONS } from '@/utils/kafkaEvents';
+
+export class WelcomeEmailConsumer extends BaseConsumer {
+  topic = 'user-topic';
+  groupId = 'welcome-email-group';
+
+  async handle(data: unknown) {
+    const result = UserEventSchema.safeParse(data);
+
+    if (!result.success) {
+      logger.error(`[Kafka] ${ERROR_MESSAGES.INVALID_USER_DATA}:`, result.error.format());
+      return;
+    }
+
+    const { action, payload } = result.data;
+
+    switch (action) {
+      case KAFKA_ACTIONS.USER_CREATED:
+        logger.info(`[Kafka] Consumer: Received ${KAFKA_ACTIONS.USER_CREATED}.`);
+        logger.info(`[Kafka] Consumer: 📧 Sending welcome email to '${payload.email}'... Done!`);
+        break;
+      case KAFKA_ACTIONS.USER_UPDATED:
+        logger.info(`[Kafka] Consumer: Received ${KAFKA_ACTIONS.USER_UPDATED}.`);
+        logger.info(
+          `[Kafka] Consumer: 🔄 Updating user records for '${payload.id}' (Email: ${payload.email})... Done!`,
+        );
+        break;
+      case KAFKA_ACTIONS.USER_DELETED:
+        logger.info(`[Kafka] Consumer: Received ${KAFKA_ACTIONS.USER_DELETED}.`);
+        logger.info(`[Kafka] Consumer: 🗑️ Cleaning up data for user '${payload.id}'... Done!`);
+        break;
+      default:
+        logger.warn(`[Kafka] Unknown action: ${action}`);
+    }
+  }
+}

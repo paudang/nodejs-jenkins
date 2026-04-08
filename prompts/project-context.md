@@ -12,7 +12,7 @@ You are an expert working on **nodejs-zxczx**.
 - **Language**: TypeScript
 - **Architecture**: Clean Architecture
 - **Database**: PostgreSQL
-- **Communication Protocol**: GraphQL
+- **Communication Protocol**: Kafka
 - **Caching**: Redis
 
 ## High-Level Architecture

@@ -13,6 +13,8 @@ module.exports = {
         REDIS_HOST: '127.0.0.1',
         REDIS_PORT: 6379,
         REDIS_PASSWORD: '',
+        KAFKA_BROKER: '127.0.0.1:9093',
+        KAFKAJS_NO_PARTITIONER_WARNING: 1,
         DB_HOST: '127.0.0.1',
         DB_USER: 'postgres',
         DB_PASSWORD: 'root',

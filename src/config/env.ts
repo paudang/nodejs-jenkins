@@ -17,6 +17,7 @@ const envSchema = z.object({
   REDIS_HOST: z.string(),
   REDIS_PORT: z.string().transform(Number),
   REDIS_PASSWORD: z.string().optional(),
+  KAFKA_BROKER: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);

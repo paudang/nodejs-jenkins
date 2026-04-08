@@ -1,0 +1,118 @@
+openapi: 3.0.0
+info:
+  title: nodejs-zxczx API
+  version: 1.0.0
+  description: API documentation for nodejs-zxczx
+servers:
+  - url: http://localhost:3000
+    description: Local Server
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        id:
+          type: integer
+          description: The auto-generated id of the user
+        name:
+          type: string
+          description: The name of the user
+        email:
+          type: string
+          description: The email of the user
+      example:
+        id: 1
+        name: John Doe
+        email: john@example.com
+tags:
+  - name: Users
+    description: The users managing API
+paths:
+  /api/users:
+    get:
+      summary: Returns the list of all the users
+      tags:
+        - Users
+      responses:
+        '200':
+          description: The list of the users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: The created user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '500':
+          description: Some server error
+  /api/users/{id}:
+    patch:
+      summary: Update an existing user
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The user id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: The updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Some server error
+    delete:
+      summary: Delete an existing user
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The user id
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+        '500':
+          description: Some server error

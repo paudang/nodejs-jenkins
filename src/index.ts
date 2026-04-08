@@ -9,32 +9,15 @@ import morgan from 'morgan';
 import { errorMiddleware } from '@/utils/errorMiddleware';
 import { setupGracefulShutdown } from '@/utils/gracefulShutdown';
 import healthRoutes from '@/interfaces/routes/healthRoute';
-
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@as-integrations/express4';
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-import { unwrapResolverError } from '@apollo/server/errors';
-import { ApiError } from '@/errors/ApiError';
-import { typeDefs, resolvers } from '@/interfaces/graphql';
-import { gqlContext, MyContext } from '@/interfaces/graphql/context';
-
+import userRoutes from '@/interfaces/routes/userRoutes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpecs from '@/config/swagger';
+import { kafkaService } from '@/infrastructure/messaging/kafkaClient';
 const app = express();
 const port = env.PORT;
 
 // Security Middleware
-app.use(
-  helmet({
-    crossOriginEmbedderPolicy: false,
-    contentSecurityPolicy: {
-      directives: {
-        imgSrc: [`'self'`, 'data:', 'apollo-server-landing-page.cdn.apollographql.com'],
-        scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
-        manifestSrc: [`'self'`, 'apollo-server-landing-page.cdn.apollographql.com'],
-        frameSrc: [`'self'`, 'sandbox.embed.apollographql.com'],
-      },
-    },
-  }),
-);
+app.use(helmet());
 app.use(hpp());
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
 const limiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 100 });
@@ -43,47 +26,26 @@ app.use(limiter);
 app.use(express.json());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
+app.use('/api/users', userRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 app.use('/health', healthRoutes);
 
 // Start Server Logic
 const startServer = async () => {
-  // GraphQL Setup
-  const apolloServer = new ApolloServer<MyContext>({
-    typeDefs,
-    resolvers,
-    plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],
-    formatError: (formattedError, error) => {
-      const originalError = unwrapResolverError(error);
-      if (originalError instanceof ApiError) {
-        return {
-          ...formattedError,
-          message: originalError.message,
-          extensions: {
-            ...formattedError.extensions,
-            code: originalError.statusCode.toString(),
-          },
-        };
-      }
-
-      logger.error(`GraphQL Error: ${formattedError.message}`);
-      if (
-        originalError instanceof Error &&
-        originalError.stack &&
-        process.env.NODE_ENV === 'development'
-      ) {
-        logger.error(originalError.stack);
-      }
-      return formattedError;
-    },
-  });
-  await apolloServer.start();
-  app.use('/graphql', expressMiddleware(apolloServer, { context: gqlContext }));
   app.use(errorMiddleware);
   const server = app.listen(port, () => {
     logger.info(`Server running on port ${port}`);
+    kafkaService
+      .connect()
+      .then(async () => {
+        logger.info('Kafka connected');
+      })
+      .catch((err) => {
+        logger.error('Failed to connect to Kafka after retries:', (err as Error).message);
+      });
   });
 
-  setupGracefulShutdown(server);
+  setupGracefulShutdown(server, kafkaService);
 };
 
 // Database Sync

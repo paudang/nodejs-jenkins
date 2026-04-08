@@ -1,0 +1,56 @@
+import { BaseConsumer } from '@/interfaces/messaging/baseConsumer';
+import logger from '@/infrastructure/log/logger';
+
+jest.mock('@/infrastructure/log/logger');
+
+class TestConsumer extends BaseConsumer {
+  constructor() {
+    super();
+  }
+  get topic() {
+    return 'test-topic';
+  }
+  get groupId() {
+    return 'test-group';
+  }
+  async handle(data: any) {
+    logger.info('Handled', data);
+  }
+}
+
+describe('BaseConsumer', () => {
+  let consumer: TestConsumer;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    consumer = new TestConsumer();
+  });
+
+  it('should throw error if instantiated directly', () => {
+    // @ts-expect-error: Abstract class cannot be instantiated
+    expect(() => new BaseConsumer()).toThrow(
+      "Abstract class 'BaseConsumer' cannot be instantiated.",
+    );
+  });
+
+  it('should process a valid message', async () => {
+    const message = { value: Buffer.from(JSON.stringify({ test: 'data' })) };
+    await consumer.onMessage({ message } as any);
+    expect(logger.info).toHaveBeenCalledWith('Handled', { test: 'data' });
+  });
+
+  it('should handle invalid JSON', async () => {
+    const message = { value: Buffer.from('invalid-json') };
+    await consumer.onMessage({ message } as any);
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('[Kafka] Error processing message on topic test-topic:'),
+      expect.anything(),
+    );
+  });
+
+  it('should skip empty messages', async () => {
+    const message = { value: null };
+    await consumer.onMessage({ message } as any);
+    expect(logger.info).not.toHaveBeenCalled();
+  });
+});
