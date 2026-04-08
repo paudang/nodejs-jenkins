@@ -7,63 +7,65 @@ const TEST_PORT = process.env.PORT || '3001';
 const WAIT_ON_HOST = process.env.WAIT_ON_HOST || '127.0.0.1';
 
 const execute = (command) => {
-    console.log(`\n> ${command}`);
-    // Run commands from the project root instead of the scripts folder
-    execSync(command, { stdio: 'inherit', cwd: path.resolve(__dirname, '../') });
+  console.log(`\n> ${command}`);
+  // Run commands from the project root instead of the scripts folder
+  execSync(command, { stdio: 'inherit', cwd: path.resolve(__dirname, '../') });
 };
 
 let composeCmd = 'docker-compose';
 try {
-    execSync('docker compose version', { stdio: 'ignore' });
-    composeCmd = 'docker compose';
+  execSync('docker compose version', { stdio: 'ignore' });
+  composeCmd = 'docker compose';
 } catch (e) {
-    // fallback to docker-compose
+  // fallback to docker-compose
 }
 
 let currentProcessStartedDocker = false;
 
 try {
-    let isAlreadyUp = false;
+  let isAlreadyUp = false;
+  try {
+    // Silently check if the endpoint is already live (1.5-second timeout)
+    execSync(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 1500`, {
+      stdio: 'ignore',
+      cwd: path.resolve(__dirname, '../'),
+    });
+    isAlreadyUp = true;
+  } catch (e) {
+    isAlreadyUp = false;
+  }
+
+  if (isAlreadyUp) {
+    console.log('Infrastructure is already running! Skipping Docker spin-up...');
+  } else {
+    console.log(`Starting Docker Compose infrastructure using '${composeCmd}'...`);
+    execute(`${composeCmd} up -d --build`);
+    currentProcessStartedDocker = true;
+
+    console.log('Waiting for application healthcheck to turn green (300s timeout)...');
     try {
-        // Silently check if the endpoint is already live (1.5-second timeout)
-        execSync(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 1500`, { 
-            stdio: 'ignore',
-            cwd: path.resolve(__dirname, '../') 
-        });
-        isAlreadyUp = true;
+      // Using wait-on to poll the universal /health endpoint injected into all architectures
+      execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 300000`);
+      console.log('Infrastructure is healthy!');
     } catch (e) {
-        isAlreadyUp = false;
+      console.error('\n❌ Healthcheck timed out! Printing infrastructure logs for debugging:');
+      console.error('------------------------------------------------------------');
+      execute(`${composeCmd} logs --tail=100`);
+      console.error('------------------------------------------------------------');
+      throw e;
     }
+  }
 
-    if (isAlreadyUp) {
-        console.log('Infrastructure is already running! Skipping Docker spin-up...');
-    } else {
-        console.log(`Starting Docker Compose infrastructure using '${composeCmd}'...`);
-        execute(`${composeCmd} up -d --build`);
-        currentProcessStartedDocker = true;
-
-        console.log('Waiting for application healthcheck to turn green (300s timeout)...');
-        try {
-            // Using wait-on to poll the universal /health endpoint injected into all architectures
-            execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 300000`);
-            console.log('Infrastructure is healthy!');
-        } catch (e) {
-            console.error('Healthcheck timed out! Printing infrastructure logs for debugging:');
-            execute(`${composeCmd} logs`);
-            throw e;
-        }
-    }
-
-    console.log('Running E2E tests...');
-    execute('npm run test:e2e:run');
+  console.log('Running E2E tests...');
+  execute('npm run test:e2e:run');
 } catch (error) {
-    console.error('E2E tests failed or infrastructure did not boot in time.');
-    process.exitCode = 1;
+  console.error('E2E tests failed or infrastructure did not boot in time.');
+  process.exitCode = 1;
 } finally {
-    if (currentProcessStartedDocker) {
-        console.log('Tearing down isolated Docker Compose infrastructure...');
-        execute(`${composeCmd} down`);
-    } else {
-        console.log('Leaving preexisting infrastructure running.');
-    }
+  if (currentProcessStartedDocker) {
+    console.log('Tearing down isolated Docker Compose infrastructure...');
+    execute(`${composeCmd} down`);
+  } else {
+    console.log('Leaving preexisting infrastructure running.');
+  }
 }
