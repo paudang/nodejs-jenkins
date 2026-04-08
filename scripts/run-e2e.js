@@ -9,7 +9,11 @@ const WAIT_ON_HOST = process.env.WAIT_ON_HOST || '127.0.0.1';
 const execute = (command) => {
   console.log(`\n> ${command}`);
   // Run commands from the project root instead of the scripts folder
-  execSync(command, { stdio: 'inherit', cwd: path.resolve(__dirname, '../') });
+  execSync(command, {
+    stdio: 'inherit',
+    cwd: path.resolve(__dirname, '../'),
+    env: { ...process.env, PORT: TEST_PORT }, // Ensure PORT is passed to docker-compose
+  });
 };
 
 let composeCmd = 'docker-compose';
@@ -42,7 +46,9 @@ try {
     execute(`${composeCmd} up -d --build`);
     currentProcessStartedDocker = true;
 
-    console.log(`Waiting for application healthcheck to turn green (420s timeout)...`);
+    console.log(
+      `Waiting for application healthcheck on http://${WAIT_ON_HOST}:${TEST_PORT}/health (420s timeout)...`,
+    );
     try {
       // Using WAIT_ON_HOST to allow containerized CI to hit host ports (e.g. host.docker.internal)
       execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 420000`);

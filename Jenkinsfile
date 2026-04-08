@@ -4,6 +4,7 @@ pipeline {
     environment {
         CI = 'true'
         DOCKER_BUILDKIT = '0'
+        PORT = '3001'
         WAIT_ON_HOST = 'host.docker.internal'
         TEST_URL = 'http://host.docker.internal:3001'
     }
