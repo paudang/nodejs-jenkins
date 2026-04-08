@@ -42,10 +42,10 @@ try {
     execute(`${composeCmd} up -d --build`);
     currentProcessStartedDocker = true;
 
-    console.log('Waiting for application healthcheck to turn green (300s timeout)...');
+    console.log(`Waiting for application healthcheck to turn green (420s timeout)...`);
     try {
-      // Using wait-on to poll the universal /health endpoint injected into all architectures
-      execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 300000`);
+      // Using WAIT_ON_HOST to allow containerized CI to hit host ports (e.g. host.docker.internal)
+      execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 420000`);
       console.log('Infrastructure is healthy!');
     } catch (e) {
       console.error('\n❌ Healthcheck timed out! Printing infrastructure logs for debugging:');

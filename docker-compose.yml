@@ -31,6 +31,7 @@ services:
       FLYWAY_URL: jdbc:mysql://db:3306/demo
       FLYWAY_USER: root
       FLYWAY_PASSWORD: root
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
     depends_on:
       - db
 volumes:
