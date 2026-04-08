@@ -1,42 +1,56 @@
-jest.mock('mongoose', () => ({
-    connect: jest.fn().mockResolvedValue(true),
+jest.mock('sequelize', () => {
+    const mSequelize = jest.fn(() => ({
+        authenticate: jest.fn().mockResolvedValue(true),
+        define: jest.fn(),
+    }));
+    return { Sequelize: mSequelize };
+});
+
+jest.mock('dotenv', () => ({
+    config: jest.fn()
 }));
 
-const logger = {
-    info: jest.fn(),
-    error: jest.fn(),
-};
-
-jest.mock('@/utils/logger', () => logger);
-
-describe('Mongoose Configuration', () => {
+describe('Database Configuration', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         jest.resetModules();
+        
+        // Clean environment
+        const envVars = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT'];
+        envVars.forEach(v => delete process.env[v]);
     });
 
-    it('should call mongoose.connect with correct parameters', async () => {
-        const connectDB = require('@/config/database').default;
-        const mongoose = require('mongoose');
-        await connectDB();
-        expect(mongoose.connect).toHaveBeenCalledWith(
-            expect.stringContaining('mongodb://')
+    it('should initialize Sequelize with environment variables', () => {
+        const { Sequelize: SequelizeMock } = require('sequelize');
+        process.env.DB_NAME = 'testdb';
+        process.env.DB_USER = 'testuser';
+        process.env.DB_PASSWORD = 'testpassword';
+        process.env.DB_HOST = 'localhost';
+        process.env.DB_PORT = '5432';
+
+        require('@/config/database');
+        
+        expect(SequelizeMock).toHaveBeenLastCalledWith(
+            'testdb',
+            'testuser',
+            'testpassword',
+            expect.objectContaining({
+                host: 'localhost',
+                port: 5432
+            })
         );
     });
 
-    it('should handle connection failure and retry', async () => {
-        const connectDB = require('@/config/database').default;
-        const mongoose = require('mongoose');
-        (mongoose.connect as jest.Mock)
-            .mockRejectedValueOnce(new Error('Connection failed'))
-            .mockResolvedValueOnce(true);
+    it('should initialize Sequelize with default values when env vars are missing', () => {
+        const { Sequelize: SequelizeMock } = require('sequelize');
+        delete process.env.DB_NAME;
+        delete process.env.DB_USER;
+        delete process.env.DB_PASSWORD;
+        delete process.env.DB_HOST;
+        delete process.env.DB_PORT;
 
-        const timeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation(cb => { (cb as any)(); return {} as any; });
+        require('@/config/database');
         
-        await connectDB();
-        
-        expect(logger.error).toHaveBeenCalled();
-        expect(mongoose.connect).toHaveBeenCalledTimes(2);
-        timeoutSpy.mockRestore();
+        expect(SequelizeMock).toHaveBeenCalledTimes(1);
     });
 });

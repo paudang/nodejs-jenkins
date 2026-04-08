@@ -3,8 +3,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 // Set a specific port for E2E tests to avoid collisions with local development
-process.env.PORT = process.env.PORT || '3001';
-const TEST_PORT = process.env.PORT;
+const TEST_PORT = process.env.PORT || '3001';
 const WAIT_ON_HOST = process.env.WAIT_ON_HOST || '127.0.0.1';
 
 const execute = (command) => {

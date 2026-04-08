@@ -11,9 +11,8 @@ You are an expert working on **nodejs-jenkins**.
 ## Tech Stack
 - **Language**: TypeScript
 - **Architecture**: MVC
-- **Database**: MongoDB
-- **Communication Protocol**: Kafka
-- **Caching**: Redis
+- **Database**: MySQL
+- **Communication Protocol**: GraphQL
 
 ## High-Level Architecture
 We use the MVC (Model-View-Controller) pattern.

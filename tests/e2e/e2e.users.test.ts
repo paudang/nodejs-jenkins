@@ -8,37 +8,53 @@ describe('E2E User Tests', () => {
   let userId: string;
   const uniqueEmail = `test_${Date.now()}@example.com`;
 
-  it('should trigger Kafka event for user creation', async () => {
+  it('should create a user via GraphQL', async () => {
+    const query = `
+      mutation {
+        createUser(name: "Test User", email: "${uniqueEmail}") {
+          id
+          name
+          email
+        }
+      }
+    `;
     const response = await request(SERVER_URL)
-      .post('/api/users')
-      .send({ name: 'Test User', email: uniqueEmail });
+      .post('/graphql')
+      .send({ query });
 
-    expect([201, 202]).toContain(response.statusCode);
-    userId = response.body.id || response.body._id;
+    expect(response.statusCode).toBe(200);
+    userId = response.body.data.createUser.id;
     expect(userId).toBeDefined();
-
-    // Wait for Kafka to process...
-    await new Promise(resolve => setTimeout(resolve, 500));
   });
 
-  it('should trigger Kafka event for user update', async () => {
+  it('should update a user via GraphQL', async () => {
+    const query = `
+      mutation {
+        updateUser(id: "${userId}", name: "Updated User") {
+          id
+          name
+        }
+      }
+    `;
     const response = await request(SERVER_URL)
-      .patch(`/api/users/${userId}`)
-      .send({ name: 'Updated User' });
+      .post('/graphql')
+      .send({ query });
 
-    expect([200, 202, 204]).toContain(response.statusCode);
-
-    // Wait for Kafka to process...
-    await new Promise(resolve => setTimeout(resolve, 500));
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.updateUser.name).toBe("Updated User");
   });
 
-  it('should trigger Kafka event for user deletion', async () => {
+  it('should delete a user via GraphQL', async () => {
+    const query = `
+      mutation {
+        deleteUser(id: "${userId}")
+      }
+    `;
     const response = await request(SERVER_URL)
-      .delete(`/api/users/${userId}`);
+      .post('/graphql')
+      .send({ query });
 
-    expect([200, 202, 204]).toContain(response.statusCode);
-
-    // Wait for Kafka to process...
-    await new Promise(resolve => setTimeout(resolve, 500));
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.deleteUser).toBe(true);
   });
 });

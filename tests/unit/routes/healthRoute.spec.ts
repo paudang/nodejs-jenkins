@@ -2,17 +2,13 @@ import request from 'supertest';
 import express from 'express';
 import healthRoute from '@/routes/healthRoute';
 import { HTTP_STATUS } from '@/utils/httpCodes';
-import mongoose from 'mongoose';
+import sequelize from '@/config/database';
 
-jest.mock('mongoose', () => {
+jest.mock('@/config/database', () => {
     return {
-        connection: {
-            readyState: 1,
-            db: {
-                admin: jest.fn().mockReturnValue({
-                    ping: jest.fn().mockResolvedValue(true)
-                })
-            }
+        __esModule: true,
+        default: {
+            authenticate: jest.fn()
         }
     };
 });
@@ -33,10 +29,8 @@ describe('Health Route', () => {
         expect(res.body.database).toBe('connected');
     });
 
-    it('should handle database ping failure and return 500', async () => {
-        ((mongoose.connection.db as any).admin as jest.Mock).mockReturnValueOnce({
-            ping: jest.fn().mockRejectedValueOnce(new Error('DB Error'))
-        });
+    it('should handle database authentication failure and return 500', async () => {
+        (sequelize.authenticate as jest.Mock).mockRejectedValueOnce(new Error('DB Error'));
 
         const res = await request(app).get('/health');
         expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);

@@ -1,27 +1,16 @@
 import { setupGracefulShutdown } from '@/utils/gracefulShutdown';
 import { Server } from 'http';
-import mongoose from 'mongoose';
-import redisService from '@/config/redisClient';
+import sequelize from '@/config/database';
 
-jest.mock('mongoose', () => {
+jest.mock('@/config/database', () => {
     return {
         __esModule: true,
         default: {
-            connection: {
-                close: jest.fn().mockResolvedValue(true)
-            }
+            close: jest.fn().mockResolvedValue(true)
         }
     };
 });
 
-jest.mock('@/config/redisClient', () => {
-    return {
-        __esModule: true,
-        default: {
-            quit: jest.fn().mockResolvedValue(true)
-        }
-    };
-});
 
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -29,7 +18,6 @@ describe('Graceful Shutdown', () => {
     let mockServer: Partial<Server>;
     let mockExit: jest.SpyInstance;
     let processListeners: Record<string, (...args: any[]) => void>;
-    let mockKafkaService: { disconnect: jest.Mock };
 
     beforeEach(() => {
         jest.useFakeTimers({ legacyFakeTimers: true });
@@ -49,7 +37,6 @@ describe('Graceful Shutdown', () => {
             return process;
         }) as any);
 
-        mockKafkaService = { disconnect: jest.fn().mockResolvedValue(true) };
     });
 
     afterEach(() => {
@@ -58,13 +45,13 @@ describe('Graceful Shutdown', () => {
     });
 
     it('should register SIGTERM and SIGINT events', () => {
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         expect(processListeners['SIGTERM']).toBeDefined();
         expect(processListeners['SIGINT']).toBeDefined();
     });
 
     it('should cleanly shutdown all connections and exit 0 on SIGTERM', async () => {
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         
         processListeners['SIGTERM']();
         
@@ -75,17 +62,15 @@ describe('Graceful Shutdown', () => {
 
         expect(mockServer.close).toHaveBeenCalled();
 
-        expect(mongoose.connection.close).toHaveBeenCalledWith(false);
+        expect(sequelize.close).toHaveBeenCalled();
 
-        expect(redisService.quit).toHaveBeenCalled();
 
-        expect(mockKafkaService.disconnect).toHaveBeenCalled();
 
         expect(mockExit).toHaveBeenCalledWith(0);
     });
 
     it('should exit 0 on SIGINT', async () => {
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         processListeners['SIGINT']();
         await flushPromises();
         await flushPromises();
@@ -93,10 +78,9 @@ describe('Graceful Shutdown', () => {
     });
 
     it('should handle errors during shutdown and exit 1', async () => {
-        mockKafkaService.disconnect.mockRejectedValueOnce(new Error('Shutdown Error'));
-        (mongoose.connection.close as jest.Mock).mockResolvedValueOnce(true);
+        (sequelize.close as jest.Mock).mockRejectedValueOnce(new Error('Shutdown Error'));
 
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         processListeners['SIGTERM']();
         
         await flushPromises();
@@ -113,7 +97,7 @@ describe('Graceful Shutdown', () => {
             return mockServer;
         });
 
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         processListeners['SIGTERM']();
         
         await flushPromises();
@@ -124,7 +108,7 @@ describe('Graceful Shutdown', () => {
     });
 
     it('should forcefully shutdown if cleanup takes too long', async () => {
-        setupGracefulShutdown(mockServer as Server, mockKafkaService);
+        setupGracefulShutdown(mockServer as Server);
         processListeners['SIGTERM']();
         
         jest.advanceTimersByTime(15000);

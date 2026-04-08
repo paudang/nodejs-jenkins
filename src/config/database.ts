@@ -1,26 +1,19 @@
-import mongoose from 'mongoose';
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
 
-import logger from '@/utils/logger';
+dotenv.config();
 
-const connectDB = async (): Promise<void> => {
-    const dbHost = process.env.DB_HOST || 'localhost';
-    const dbPort = process.env.DB_PORT || '27017';
-    const dbName = process.env.DB_NAME || 'demo';
-    const mongoURI = process.env.MONGO_URI || `mongodb://${dbHost}:${dbPort}/${dbName}`;
-    
-    let retries = 5;
-    while (retries) {
-        try {
-            await mongoose.connect(mongoURI);
-            logger.info('MongoDB Connected...');
-            break;
-        } catch (err) {
-            logger.error('MongoDB connection failed:', err);
-            retries -= 1;
-            logger.info(`Retries left: ${retries}. Waiting 5s...`);
-            await new Promise(res => setTimeout(res, 5000));
-        }
-    }
-};
+const dialect = 'mysql';
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'demo',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || 'root',
+  {
+    host: process.env.DB_HOST || '127.0.0.1',
+    dialect: dialect,
+    logging: false,
+    port: parseInt(process.env.DB_PORT || '3306')
+  }
+);
 
-export default connectDB;
+export default sequelize;

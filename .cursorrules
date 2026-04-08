@@ -5,8 +5,8 @@ You are an expert working on **nodejs-jenkins**.
 - **Project Goal**: [Replace this with your business logic, e.g., E-commerce API]
 - **Language**: TypeScript
 - **Architecture**: MVC
-- **Database**: MongoDB
-- **Communication**: Kafka
+- **Database**: MySQL
+- **Communication**: GraphQL
 
 ## Excluded Files/Folders
 When indexing or searching the workspace, ignore the following paths to prevent context pollution:
