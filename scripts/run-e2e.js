@@ -50,9 +50,7 @@ try {
     execute(`${composeCmd} up -d --build`);
     currentProcessStartedDocker = true;
 
-    console.log(
-      `Waiting for application healthcheck on http://${WAIT_ON_HOST}:${TEST_PORT}/health (420s timeout)...`,
-    );
+    console.log(`Waiting for application healthcheck to turn green (420s timeout)...`);
     try {
       // Using WAIT_ON_HOST to allow containerized CI to hit host ports (e.g. host.docker.internal)
       execute(`npx wait-on http-get://${WAIT_ON_HOST}:${TEST_PORT}/health -t 420000`);

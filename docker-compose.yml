@@ -7,19 +7,23 @@ services:
       - db
     environment:
       - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
       - DB_HOST=db
-      - DB_USER=root
+      - DB_USER=postgres
       - DB_PASSWORD=root
       - DB_NAME=demo
-      - DB_PORT=3306
+      - DB_PORT=5432
   db:
-    image: mysql:8.0
+    image: postgres:15
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: demo
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - ./flyway/sql:/docker-entrypoint-initdb.d
   flyway:
@@ -28,11 +32,16 @@ services:
     volumes:
       - ./flyway/sql:/flyway/sql
     environment:
-      FLYWAY_URL: jdbc:mysql://db:3306/demo
-      FLYWAY_USER: root
+      FLYWAY_URL: jdbc:postgresql://db:5432/demo
+      FLYWAY_USER: postgres
       FLYWAY_PASSWORD: root
       FLYWAY_BASELINE_ON_MIGRATE: "true"
     depends_on:
       - db
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
 volumes:
-  mysql_data:
+  postgresql_data:

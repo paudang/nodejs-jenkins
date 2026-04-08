@@ -1,11 +1,11 @@
-# Cursor AI Coding Rules for nodejs-jenkins
+# Cursor AI Coding Rules for nodejs-zxczx
 
 ## Project Context
-You are an expert working on **nodejs-jenkins**.
+You are an expert working on **nodejs-zxczx**.
 - **Project Goal**: [Replace this with your business logic, e.g., E-commerce API]
 - **Language**: TypeScript
-- **Architecture**: MVC
-- **Database**: MySQL
+- **Architecture**: Clean Architecture
+- **Database**: PostgreSQL
 - **Communication**: GraphQL
 
 ## Excluded Files/Folders
@@ -37,7 +37,9 @@ When indexing or searching the workspace, ignore the following paths to prevent 
 - **Typing**: Ensure strong typing for interfaces and DTOs. Do not use `any` unless absolutely necessary.
 
 ### 4. Architecture Standards
-- Enforce MVC standards:
-  - `models`: Data layer.
-  - `controllers`: Request handlers and business logic.
-  - `routes`: Define endpoints routing to controllers.
+- Enforce strict separation of concerns:
+  - `domain`: Entities and enterprise business rules.
+  - `usecases`: Application business rules.
+  - `interfaces`: Controllers and Routes.
+  - `infrastructure`: Frameworks, Database, Caching, and Web Server.
+- Dependencies point inward toward the `domain`.

@@ -1,11 +1,11 @@
-# nodejs-jenkins
+# nodejs-zxczx
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)
 ![License](https://img.shields.io/badge/License-ISC-blue.svg)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue.svg)
 
 
-A production-ready Node.js microservice generated with **MVC** and **MySQL**. 
+A production-ready Node.js microservice generated with **Clean Architecture** and **PostgreSQL**. 
 This project follows a strict **7-Step Production-Ready Process** to ensure quality and scalability from day one.
 
 ---
@@ -15,7 +15,7 @@ This project follows a strict **7-Step Production-Ready Process** to ensure qual
 1.  **Initialize Git**: `git init` (Required for Husky hooks and security gates).
 2.  **Install Dependencies**: `npm install`.
 3.  **Configure Environment**: Copy `.env.example` to `.env`.
-4.  **Start Infrastructure**: `docker-compose up -d db`.
+4.  **Start Infrastructure**: `docker-compose up -d db redis`.
 5.  **Run Development**: `npm run dev`.
 6.  **Verify Standards**: `npm run lint` and `npm test` (Enforce 80% coverage).
 7.  **Build & Deploy**: `npm run build` followed by `npm run deploy` (via PM2).
@@ -24,8 +24,8 @@ This project follows a strict **7-Step Production-Ready Process** to ensure qual
 
 ## 🚀 Key Features
 
--   **Architecture**: MVC (MVC Pattern).
--   **Database**: MySQL (via Sequelize).
+-   **Architecture**: Clean Architecture (Domain, UseCases, Infrastructure).
+-   **Database**: PostgreSQL (via Sequelize).
 -   **Security**: Helmet, CORS, Rate Limiting, HPP, Snyk SCA.
 -   **Quality**: 80%+ Test Coverage, Eslint, Prettier, Husky.
 -   **DevOps**: Multi-stage Docker, CI/CD ready (GitHub/GitLab/Jenkins/Bitbucket/CircleCI).
@@ -33,10 +33,10 @@ This project follows a strict **7-Step Production-Ready Process** to ensure qual
 
 ## 📂 Project Structure
 
-The project follows **MVC** principles.
-- **Model**: Database schemas and data logic.
-- **View**: Template engines or API responders.
-- **Controller**: Orchestrates flow between Model and View.
+The project follows **Clean Architecture** principles.
+- **Domain**: Pure business logic (Entities/Interfaces).
+- **Use Case**: Application-specific business rules.
+- **Infrastructure**: External concerns (DB, Messaging, Caching).
 
 ---
 
@@ -63,7 +63,7 @@ git init
 npm install
 
 # Start required services
-docker-compose up -d db
+docker-compose up -d db redis
 
 # Run the app in development mode
 npm run dev
@@ -126,6 +126,10 @@ mutation DeleteUser {
 ```
 
 
+## ⚡ Caching
+This project uses **Redis** for caching.
+- **Client**: `ioredis`
+- **Connection**: Configured via `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` in `.env`.
 
 ## 📝 Logging
 This project uses **Winston** for structured logging.
@@ -142,7 +146,7 @@ To run the Node.js application locally while using Docker for the infrastructure
 
 ```bash
 # Start infrastructure
-docker-compose up -d db
+docker-compose up -d db redis
 
 # Start the application
 npm run dev
@@ -156,12 +160,13 @@ If you want to run the application itself inside a Docker container while connec
 docker-compose up -d
 
 # Build Production Image
-docker build -t nodejs-jenkins .
+docker build -t nodejs-zxczx .
 
 # Run Container (attached to the compose network)
-docker run -p 3000:3000 --network nodejs-jenkins_default \
+docker run -p 3000:3000 --network nodejs-zxczx_default \
   -e DB_HOST=db \
-  nodejs-jenkins
+  -e REDIS_HOST=redis \
+  nodejs-zxczx
 ```
 ## 🚀 PM2 Deployment (VPS/EC2)
 This project is pre-configured for direct deployment to a VPS/EC2 instance using **PM2** (via `ecosystem.config.js`).
@@ -172,7 +177,7 @@ npm install
 2. **Start Infrastructure (DB, Redis, Kafka, etc.) in the background**
 *(This specifically starts the background services without running the application inside Docker, allowing PM2 to handle it).*
 ```bash
-docker-compose up -d db
+docker-compose up -d db redis
 ```
 3. **Wait 5-10s** for the database to fully initialize.
 4. **Deploy the App using PM2 in Cluster Mode**
@@ -186,7 +191,7 @@ npx pm2 logs
 ```
 6. Stop and remove the PM2 application
 ```bash
-npx pm2 delete nodejs-jenkins
+npx pm2 delete nodejs-zxczx
 ```
 7. Stop and remove the Docker infrastructure
 ```bash
@@ -203,7 +208,7 @@ docker-compose down
 
 This project is "AI-Ready" out of the box. We have pre-configured industry-leading AI context files to bridge the gap between "Generated Code" and "AI-Assisted Development."
 
-- **Magic Defaults**: We've automatically tailored your AI context to focus on **nodejs-jenkins** and its specific architectural stack (MVC, MySQL, etc.).
+- **Magic Defaults**: We've automatically tailored your AI context to focus on **nodejs-zxczx** and its specific architectural stack (Clean Architecture, PostgreSQL, etc.).
 - **Use Cursor?** We've configured **`.cursorrules`** at the root. It enforces project standards (80% coverage, MVC/Clean) directly within the editor. 
   - *Pro-tip*: You can customize the `Project Goal` placeholder in `.cursorrules` to help the AI understand your specific business logic!
 - **Use ChatGPT/Gemini/Claude?** Check the **`prompts/`** directory. It contains highly-specialized Agent Skill templates. You can copy-paste these into any LLM to give it a "Senior Developer" understanding of your codebase immediately.
