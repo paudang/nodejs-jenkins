@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         CI = 'true'
+        DOCKER_BUILDKIT = '0'
     }
 
     tools {
