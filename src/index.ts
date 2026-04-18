@@ -1,19 +1,19 @@
 import { env } from '@/config/env';
 import express from 'express';
-import type { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
-import logger from '@/utils/logger';
+import logger from '@/infrastructure/log/logger';
 import morgan from 'morgan';
 import { errorMiddleware } from '@/utils/errorMiddleware';
 import { setupGracefulShutdown } from '@/utils/gracefulShutdown';
-import healthRoutes from '@/routes/healthRoute';
-import apiRoutes from '@/routes/api';
+import healthRoutes from '@/interfaces/routes/healthRoute';
+import userRoutes from '@/interfaces/routes/userRoutes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpecs from '@/config/swagger';
-
+import authRoutes from '@/interfaces/routes/authRoutes';
+import { kafkaService } from '@/infrastructure/messaging/kafkaClient';
 const app = express();
 const port = env.PORT;
 
@@ -26,21 +26,10 @@ app.use(limiter);
 
 app.use(express.json());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-// View Engine Setup
-import path from 'path';
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/api', apiRoutes);
-app.get('/', (req: Request, res: Response) => {
-  res.render('index', {
-    projectName: 'NodeJS Service',
-    architecture: 'MVC',
-    database: 'MySQL',
-    communication: 'REST APIs',
-  });
-});
 app.use('/health', healthRoutes);
 
 // Start Server Logic
@@ -48,20 +37,28 @@ const startServer = async () => {
   app.use(errorMiddleware);
   const server = app.listen(port, () => {
     logger.info(`Server running on port ${port}`);
+    kafkaService
+      .connect()
+      .then(async () => {
+        logger.info('Kafka connected');
+      })
+      .catch((err) => {
+        logger.error('Failed to connect to Kafka after retries:', (err as Error).message);
+      });
   });
 
-  setupGracefulShutdown(server);
+  setupGracefulShutdown(server, kafkaService);
 };
 
 // Database Sync
-import sequelize from '@/config/database';
+import connectDB from '@/infrastructure/database/database';
+
 const syncDatabase = async () => {
   let retries = 30;
   while (retries) {
     try {
-      await sequelize.sync();
+      await connectDB();
       logger.info('Database synced');
-      // Start Server after DB is ready
       await startServer();
       break;
     } catch (error) {

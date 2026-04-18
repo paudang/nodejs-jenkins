@@ -1,18 +1,24 @@
 openapi: 3.0.0
 info:
-  title: nodejs-service API
+  title: zzzzzz API
   version: 1.0.0
-  description: API documentation for nodejs-service
+  description: API documentation for zzzzzz
 servers:
   - url: http://localhost:3000
     description: Local Server
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     User:
       type: object
       required:
         - name
         - email
+        - password
       properties:
         id:
           type: integer
@@ -23,6 +29,12 @@ components:
         email:
           type: string
           description: The email of the user
+        
+        password:
+          type: string
+          writeOnly: true
+          description: The password of the user
+        
       example:
         id: 1
         name: John Doe
@@ -30,7 +42,99 @@ components:
 tags:
   - name: Users
     description: The users managing API
+  - name: Auth
+    description: Authentication API
 paths:
+  /api/auth/login:
+    post:
+      summary: Login and receive a JWT token
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          description: Invalid credentials
+  /api/auth/refresh:
+    post:
+      summary: Refresh access token using a refresh token
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          description: Invalid refresh token
+  /api/auth/logout:
+    post:
+      summary: Logout and revoke refresh token
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
   /api/users:
     get:
       summary: Returns the list of all the users
@@ -45,6 +149,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+      security:
+        - bearerAuth: []
     post:
       summary: Create a new user
       tags:
@@ -65,6 +171,30 @@ paths:
         '500':
           description: Some server error
   /api/users/{id}:
+    get:
+      summary: Get a user by ID
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The user id
+      responses:
+        '200':
+          description: The user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Some server error
+      security:
+        - bearerAuth: []
     patch:
       summary: Update an existing user
       tags:
@@ -98,6 +228,8 @@ paths:
           description: User not found
         '500':
           description: Some server error
+      security:
+        - bearerAuth: []
     delete:
       summary: Delete an existing user
       tags:
@@ -116,3 +248,5 @@ paths:
           description: User not found
         '500':
           description: Some server error
+      security:
+        - bearerAuth: []

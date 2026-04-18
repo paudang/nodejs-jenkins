@@ -2,9 +2,9 @@ import { errorMiddleware } from '@/utils/errorMiddleware';
 import { Request, Response } from 'express';
 import { ApiError } from '@/errors/ApiError';
 import { HTTP_STATUS } from '@/utils/httpCodes';
-import logger from '@/utils/logger';
+import logger from '@/infrastructure/log/logger';
 
-jest.mock('@/utils/logger');
+jest.mock('@/infrastructure/log/logger');
 
 describe('Error Middleware', () => {
   let mockRequest: Partial<Request>;

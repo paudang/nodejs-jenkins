@@ -1,12 +1,12 @@
-# Cursor AI Coding Rules for nodejs-service
+# Cursor AI Coding Rules for zzzzzz
 
 ## Project Context
-You are an expert working on **nodejs-service**.
+You are an expert working on **zzzzzz**.
 - **Project Goal**: [Replace this with your business logic, e.g., E-commerce API]
 - **Language**: TypeScript
-- **Architecture**: MVC
-- **Database**: MySQL
-- **Communication**: REST APIs
+- **Architecture**: Clean Architecture
+- **Database**: MongoDB
+- **Communication**: Kafka
 
 ## Excluded Files/Folders
 When indexing or searching the workspace, ignore the following paths to prevent context pollution:
@@ -37,7 +37,16 @@ When indexing or searching the workspace, ignore the following paths to prevent 
 - **Typing**: Ensure strong typing for interfaces and DTOs. Do not use `any` unless absolutely necessary.
 
 ### 4. Architecture Standards
-- Enforce MVC standards:
-  - `models`: Data layer.
-  - `controllers`: Request handlers and business logic.
-  - `routes`: Define endpoints routing to controllers.
+- Enforce strict separation of concerns:
+  - `domain`: Entities and enterprise business rules.
+  - `usecases`: Application business rules.
+  - `interfaces`: Controllers and Routes.
+  - `infrastructure`: Frameworks, Database, Caching, and Web Server.
+- Dependencies point inward toward the `domain`.
+
+### 5. Security & Authentication
+- **Protected Routes**: When adding new routes, consider if they need `authMiddleware`.
+- **User Identity**: Extract user info from `req.user` (populated by middleware).
+- **Sensitive Data**: Never return passwords in API responses (ensure `.toJSON()` or DTOs handle this).
+- **Input Validation**: Always validate user input using schemas or controller-level checks.
+- **Sanitization**: Ensure inputs are sanitized before being used in DB queries (though our ORMs like Sequelize/Mongoose handle much of this).

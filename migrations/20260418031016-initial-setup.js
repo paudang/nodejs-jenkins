@@ -1,0 +1,24 @@
+module.exports = {
+  async up(db, _client) {
+    const adminEmail = 'admin@example.com';
+    const existingAdmin = await db.collection('users').findOne({ email: adminEmail });
+
+    if (!existingAdmin) {
+      await db.collection('users').insertOne({
+        name: 'Admin User',
+        email: adminEmail,
+        password: '$2a$10$X.fO9PeyF0Lq0lF8uV6G9u4Vb4e5T0rF8l/JzM6S7X9u4Vb4e5T0r', // password: password123
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log('Admin User seeded successfully'); // eslint-disable-line no-console
+    } else {
+      console.log('Admin User already exists, skipping seed'); // eslint-disable-line no-console
+    }
+  },
+
+  async down(_db, _client) {
+    // Optional: Undo the seed. Usually for seeds we might want to keep data, but strictly speaking 'down' should reverse 'up'.
+    // await db.collection('users').deleteOne({ email: 'admin@example.com' });
+  },
+};

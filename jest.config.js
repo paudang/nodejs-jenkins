@@ -9,24 +9,26 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   coveragePathIgnorePatterns: [
-    "/node_modules/",
-    "/dist/",
-    "src/index",
-    "src/app",
-    "src/config/env",
-    "src/infrastructure/config/env",
-    "src/config/swagger",
-    "src/infrastructure/webserver/swagger",
-    "src/infrastructure/webserver/server",
-    "src/utils/logger",
-    "src/infrastructure/log/logger"
+    '/node_modules/',
+    '/dist/',
+    'src/index.(js|ts)',
+    'src/app.(js|ts)',
+    'src/config',
+    'src/infrastructure/config',
+    'src/routes',
+    'src/infrastructure/routes',
+    'src/interfaces/routes',
+    'src/graphql',
+    'src/interfaces/graphql',
+    'src/utils',
+    'src/models',
   ],
   coverageThreshold: {
     global: {
       branches: 70,
       functions: 80,
       lines: 80,
-      statements: 80
-    }
-  }
+      statements: 80,
+    },
+  },
 };

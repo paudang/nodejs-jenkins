@@ -1,6 +1,6 @@
 # Troubleshoot Error
 
-I am encountering an error in the nodejs-service application. Please help me diagnose and fix it based on our architectural standards.
+I am encountering an error in the zzzzzz application. Please help me diagnose and fix it based on our architectural standards.
 
 ## The Error Log / Issue Description
 \`\`\`
@@ -8,7 +8,7 @@ I am encountering an error in the nodejs-service application. Please help me dia
 \`\`\`
 
 ## Context Variables
-- **Architecture**: MVC
+- **Architecture**: Clean Architecture
 - **Language**: TypeScript
 
 ## Guidelines for Fixing
@@ -24,5 +24,5 @@ When analyzing this error, please keep these project standards in mind:
    - Check if this is a connection issue (e.g., Database, Kafka, Redis) and see if our standard configuration or health checks provide hints.
 4. **Fix Suggestion**:
    - Explain *why* the error happened.
-   - Provide a targeted code fix matching our coding style (TypeScript, MVC).
+   - Provide a targeted code fix matching our coding style (TypeScript, Clean Architecture).
    - Only modify what is strictly necessary to solve the issue.

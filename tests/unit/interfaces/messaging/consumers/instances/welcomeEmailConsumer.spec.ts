@@ -1,0 +1,88 @@
+import { WelcomeEmailConsumer } from '@/interfaces/messaging/consumers/instances/welcomeEmailConsumer';
+import logger from '@/infrastructure/log/logger';
+
+jest.mock('@/infrastructure/log/logger');
+
+describe('WelcomeEmailConsumer', () => {
+  let consumer: WelcomeEmailConsumer;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    consumer = new WelcomeEmailConsumer();
+  });
+
+  it('should log welcome email simulation for USER_CREATED action', async () => {
+    const data = {
+      action: 'USER_CREATED',
+      payload: {
+        id: 1,
+        email: 'test@example.com',
+      },
+    };
+
+    await consumer.handle(data);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('[Kafka] Consumer: Received USER_CREATED.'),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining("📧 Sending welcome email to 'test@example.com'... Done!"),
+    );
+  });
+
+  it('should log update simulation for USER_UPDATED action', async () => {
+    const data = {
+      action: 'USER_UPDATED',
+      payload: {
+        id: 1,
+        email: 'updated@example.com',
+      },
+    };
+
+    await consumer.handle(data);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('[Kafka] Consumer: Received USER_UPDATED.'),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "🔄 Updating user records for '1' (Email: updated@example.com)... Done!",
+      ),
+    );
+  });
+
+  it('should log deletion simulation for USER_DELETED action', async () => {
+    const data = {
+      action: 'USER_DELETED',
+      payload: {
+        id: 1,
+      },
+    };
+
+    await consumer.handle(data);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('[Kafka] Consumer: Received USER_DELETED.'),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining("🗑️ Cleaning up data for user '1'... Done!"),
+    );
+  });
+
+  it('should log error for invalid data', async () => {
+    const data = {
+      action: 'USER_CREATED',
+      payload: {
+        id: 1,
+        email: 'invalid-email',
+      },
+    };
+
+    await consumer.handle(data);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('[Kafka] Invalid user event data:'),
+      expect.anything(),
+    );
+  });
+});
